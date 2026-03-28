@@ -1,0 +1,112 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+  role     String // ADMIN, OFFICER, MANAGEMENT
+}
+
+model Institution {
+  id        Int        @id @default(autoincrement())
+  name      String
+  campuses  Campus[]
+}
+
+model Campus {
+  id            Int          @id @default(autoincrement())
+  name          String
+  institution   Institution  @relation(fields: [institutionId], references: [id])
+  institutionId Int
+  departments   Department[]
+}
+
+model Department {
+  id       Int       @id @default(autoincrement())
+  name     String
+  campus   Campus    @relation(fields: [campusId], references: [id])
+  campusId Int
+  programs Program[]
+}
+
+model Program {
+  id             Int          @id @default(autoincrement())
+  name           String
+  department     Department   @relation(fields: [departmentId], references: [id])
+  departmentId   Int
+  courseType     String       // UG, PG
+  entryType      String       // Regular, Lateral
+  admissionMode  String       // Government, Management
+  seatMatrices   SeatMatrix[]
+  applicants     Applicant[]
+}
+
+model AcademicYear {
+  id   Int    @id @default(autoincrement())
+  year String @unique
+}
+
+model SeatMatrix {
+  id             Int     @id @default(autoincrement())
+  program        Program @relation(fields: [programId], references: [id])
+  programId      Int
+  quotaType      String  // KCET, COMEDK, Management
+  totalSeats     Int
+  allocatedSeats Int     @default(0)
+  
+  @@unique([programId, quotaType])
+}
+
+model Applicant {
+  id               Int       @id @default(autoincrement())
+  fullName         String
+  dob              DateTime
+  gender           String
+  mobile           String
+  email            String
+  category         String    // GM, SC, ST, OBC
+  entryType        String
+  admissionMode    String
+  quotaType        String    // KCET, COMEDK, Management
+  program          Program   @relation(fields: [programId], references: [id])
+  programId        Int
+  academicYear     String
+  allotmentNumber  String?   @unique
+  qualifyingExam   String
+  marks            Float
+  address          String
+
+  docStatus        String    @default("Pending") // Pending, Submitted, Verified
+  feeStatus        String    @default("Pending") // Pending, Paid
+  admissionStatus  String    @default("Pending") // Pending, Allocated, Confirmed
+
+  documents        DocumentChecklist[]
+  admission        Admission?
+}
+
+model DocumentChecklist {
+  id          Int       @id @default(autoincrement())
+  applicant   Applicant @relation(fields: [applicantId], references: [id])
+  applicantId Int
+  docName     String
+  status      String    @default("Pending") // Pending, Submitted, Verified
+}
+
+model Admission {
+  id              Int       @id @default(autoincrement())
+  applicant       Applicant @relation(fields: [applicantId], references: [id])
+  applicantId     Int       @unique
+  admissionNumber String    @unique
+  programId       Int
+  quotaType       String
+  feeStatus       String
+  confirmedAt     DateTime  @default(now())
+}
