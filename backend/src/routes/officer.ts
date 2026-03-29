@@ -5,6 +5,17 @@ import { authenticate, authorize } from '../middleware/auth';
 export const officerRouter = Router();
 const prisma = new PrismaClient();
 
+type DocumentLike = {
+  status: string;
+};
+
+const deriveDocStatus = (documents: DocumentLike[]) => {
+  if (documents.length === 0) return 'Pending';
+  if (documents.every((doc) => doc.status === 'Verified')) return 'Verified';
+  if (documents.every((doc) => doc.status === 'Submitted' || doc.status === 'Verified')) return 'Submitted';
+  return 'Pending';
+};
+
 officerRouter.use(authenticate);
 officerRouter.use(authorize(['OFFICER']));
 
@@ -35,9 +46,22 @@ officerRouter.get('/setup-data', async (req: Request, res: Response): Promise<vo
 officerRouter.get('/applicants', async (req: Request, res: Response): Promise<void> => {
   try {
     const applicants = await prisma.applicant.findMany({
-      include: { program: true }
+      include: {
+        program: true,
+        documents: {
+          select: {
+            status: true
+          }
+        }
+      }
     });
-    res.json(applicants);
+    res.json(
+      applicants.map(({ documents, ...applicant }) => ({
+        ...applicant,
+        documents,
+        docStatus: deriveDocStatus(documents)
+      }))
+    );
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch applicants' });
   }
@@ -90,7 +114,13 @@ officerRouter.get('/applicants/:id', async (req: Request, res: Response): Promis
       }
     });
 
-    res.json({ applicant, seatMatrix });
+    res.json({
+      applicant: {
+        ...applicant,
+        docStatus: deriveDocStatus(applicant.documents)
+      },
+      seatMatrix
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch applicant' });
   }
@@ -102,9 +132,28 @@ officerRouter.put('/documents/:id', async (req: Request, res: Response): Promise
     const { status } = req.body;
     const doc = await prisma.documentChecklist.update({
       where: { id: Number(req.params.id) },
-      data: { status }
+      data: { status },
+      select: {
+        id: true,
+        applicantId: true,
+        docName: true,
+        status: true
+      }
     });
-    res.json(doc);
+
+    const documents = await prisma.documentChecklist.findMany({
+      where: { applicantId: doc.applicantId },
+      select: { status: true }
+    });
+
+    const docStatus = deriveDocStatus(documents);
+
+    await prisma.applicant.update({
+      where: { id: doc.applicantId },
+      data: { docStatus }
+    });
+
+    res.json({ ...doc, docStatus });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update document' });
   }
