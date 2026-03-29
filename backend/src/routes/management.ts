@@ -5,6 +5,17 @@ import { authenticate, authorize } from '../middleware/auth';
 export const managementRouter = Router();
 const prisma = new PrismaClient();
 
+type DocumentLike = {
+  status: string;
+};
+
+const deriveDocStatus = (documents: DocumentLike[]) => {
+  if (documents.length === 0) return 'Pending';
+  if (documents.every((doc) => doc.status === 'Verified')) return 'Verified';
+  if (documents.every((doc) => doc.status === 'Submitted' || doc.status === 'Verified')) return 'Submitted';
+  return 'Pending';
+};
+
 managementRouter.use(authenticate);
 managementRouter.use(authorize(['MANAGEMENT', 'ADMIN']));
 
@@ -38,10 +49,23 @@ managementRouter.get('/dashboard', async (req: Request, res: Response): Promise<
       });
     });
 
-    const pendingDocs = await prisma.applicant.findMany({
-      where: { docStatus: 'Pending' },
-      select: { id: true, fullName: true, program: { select: { name: true } }, docStatus: true }
+    const applicantsWithDocs = await prisma.applicant.findMany({
+      include: {
+        program: {
+          select: { name: true }
+        },
+        documents: {
+          select: { status: true }
+        }
+      }
     });
+
+    const pendingDocs = applicantsWithDocs
+      .map(({ documents, ...applicant }) => ({
+        ...applicant,
+        docStatus: deriveDocStatus(documents)
+      }))
+      .filter((applicant) => applicant.docStatus === 'Pending');
 
     const pendingFees = await prisma.applicant.findMany({
       where: { feeStatus: 'Pending' },
