@@ -16,7 +16,8 @@ adminRouter.get('/setup-data', async (req: Request, res: Response): Promise<void
   try {
     const institutions = await prisma.institution.findMany({ include: { campuses: { include: { departments: { include: { programs: true } } } } } });
     const academicYears = await prisma.academicYear.findMany();
-    res.json({ institutions, academicYears });
+    const programs= await prisma.program.findMany();
+    res.json({ institutions, academicYears, programs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch setup data' });
   }

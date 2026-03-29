@@ -47,7 +47,7 @@ export default function SeatMatrix() {
 
   const campuses = data?.institution?.campuses || [];
   const depts = campuses.flatMap((c: any) => c.departments);
-  const programs = depts.flatMap((d: any) => d.programs);
+  const programs = data?.programs || [];
 
   return (
     <div className="space-y-6">
@@ -82,7 +82,7 @@ export default function SeatMatrix() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Total Intake</label>
               <input 
                 type="number" 
-                value={form.totalIntake || 0} 
+                value={form.totalIntake} 
                 onChange={(e) => setForm({ ...form, totalIntake: e.target.value })} 
                 required 
                 className="w-full px-4 py-2 border rounded-lg focus:ring-primary-500 outline-none" 
