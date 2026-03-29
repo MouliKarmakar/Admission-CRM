@@ -24,7 +24,8 @@ officerRouter.get('/setup-data', async (req: Request, res: Response): Promise<vo
       }
     });
     const academicYears = await prisma.academicYear.findMany();
-    res.json({ institution, academicYears });
+    const programs= await prisma.program.findMany();
+    res.json({ institution, academicYears, programs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch setup data' });
   }
