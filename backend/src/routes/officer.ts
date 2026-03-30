@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { authenticate, authorize } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
 
 export const officerRouter = Router();
-const prisma = new PrismaClient();
 
 type DocumentLike = {
   status: string;

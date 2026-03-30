@@ -1,17 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2020",                                  /* Fixes padStart and Object.values */
-    "lib": ["ES2020"],                                   /* Tells TS which JS features are available */
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
     "module": "commonjs",
     "outDir": "./dist",
-    "rootDir": "./src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": false,
     "noImplicitAny": false,
     "skipLibCheck": true,
-    "types": ["node"],                                   /* Fixes 'process', 'path', and '__dirname' */
-    "moduleResolution": "node"                           /* Helps TS find your installed packages */
+    "types": ["node"],
+    "moduleResolution": "node"
   },
   "include": ["src/**/*", "prisma/seed.ts"]
 }
